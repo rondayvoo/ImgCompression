@@ -1,9 +1,9 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc.hpp>
 #include <iostream>
 
-#define MAXRANK 2
+#define BASERANK 2
+#define IMGRANK 150
 
 using namespace cv;
 using namespace std;
@@ -13,7 +13,6 @@ Mat SVDrank(Mat inp, int rank)
 	Mat S, U, VT;
 	SVD::compute(inp, S, U, VT);
 	inp = U.col(rank) * VT.row(rank) * S.at<float>(rank);
-	cout << format(S, Formatter::FMT_DEFAULT) << endl;
 
 	return inp;
 }
@@ -21,6 +20,7 @@ Mat SVDrank(Mat inp, int rank)
 Mat SVDsum(Mat inp, int maxRank)
 {
 	Mat temp, S, U, VT, output;
+
 	SVD::compute(inp, S, U, VT);
 	output = U.col(0) * VT.row(0) * S.at<float>(0);
 
@@ -36,13 +36,13 @@ Mat SVDsum(Mat inp, int maxRank)
 void printStats(Mat* inp, Mat* out, int rank)
 {
 	Mat temp[3];
-	float accuracy = 0;
-	float efficiency = ((inp[0].rows + inp[0].cols + 1.0) * (float) rank) / (inp[0].rows * inp[0].cols) * 100.0;
+	float efficiency = ((inp[0].rows + inp[0].cols + 1.0) *  ((float) rank + 1)) / (inp[0].rows * inp[0].cols) * 100.0;
+	float accuracy = 0.0;
 
 	for (int i = 0; i < 3; i++)
 	{
-		compare(inp[i], out[i], temp[i], CMP_EQ);
-		accuracy += (float) countNonZero(temp[i]);
+		compare(inp[i], out[i], temp[i], CMP_LE); //Experiment with this parameter
+		accuracy += countNonZero(temp[i]);
 	}
 
 	accuracy /= 0.01 * 3.0 * inp[0].rows * inp[0].cols;
@@ -56,7 +56,8 @@ int main(int argv, char** argc)
 {
 	Mat base(8, 8, CV_8UC3, Scalar(255, 255, 255));
 	Mat expanded(512, 512, CV_8UC3);
-	Mat baseSplit[3], expandSplit[3], calcSplit[3];
+	Mat img = imread("banzai.jpg", IMREAD_COLOR);
+	Mat baseSplit[3], expandSplit[3], imgSplit[3], calcSplit[3], imgOutput;
 	expandSplit[0] = Mat::zeros(512, 512, CV_8UC1);
 	expandSplit[1] = Mat::zeros(512, 512, CV_8UC1);
 	expandSplit[2] = Mat::zeros(512, 512, CV_8UC1);
@@ -75,18 +76,31 @@ int main(int argv, char** argc)
 
 	//Splits BGR representation into individual matrices
 	split(base, baseSplit);
+	split(img, imgSplit);
 
-	//Performs BGR SVD compression by a factor of MAXRANK
+	//Performs BGR SVD compression for 8 * 8 sample by a factor of BASERANK
 	for (int i = 0; i < 3; i++)
 	{
 		calcSplit[i] = baseSplit[i];
 		baseSplit[i].convertTo(baseSplit[i], CV_32FC1);
-		baseSplit[i] = SVDsum(baseSplit[i], MAXRANK);
+		baseSplit[i] = SVDsum(baseSplit[i], BASERANK);
 		baseSplit[i].convertTo(baseSplit[i], CV_8UC1);
 	}
 
-	//Prints storage efficiency and information accuracy stats to console
-	printStats(calcSplit, baseSplit, MAXRANK);
+	//Prints storage efficiency and information accuracy stats of 8 * 8 sample to console
+	printStats(calcSplit, baseSplit, BASERANK);
+
+	//Performs BGR SVD compression for user input image by a factor of IMGRANK
+	for (int i = 0; i < 3; i++)
+	{
+		calcSplit[i] = imgSplit[i];
+		imgSplit[i].convertTo(imgSplit[i], CV_32FC1);
+		imgSplit[i] = SVDsum(imgSplit[i], IMGRANK);
+		imgSplit[i].convertTo(imgSplit[i], CV_8UC1);
+	}
+
+	//Prints storage efficiency and information accuracy stats of user input image to console
+	printStats(calcSplit, imgSplit, IMGRANK);
 	
 	//Inflates 8 * 8 image to 512 * 512
 	for (int i = 0; i < 512; i++)
@@ -102,10 +116,10 @@ int main(int argv, char** argc)
 
 	//Merges BGR components to form color image
 	merge(expandSplit, 3, expanded);
+	merge(imgSplit, 3, imgOutput);
 
 	//Displays image
-	cout << format(baseSplit[0], Formatter::FMT_DEFAULT) << endl;
-	namedWindow("channel_1", WINDOW_AUTOSIZE);
 	imshow("channel_1", expanded);
+	imshow("channel_2", imgOutput);
 	waitKey(0);
 }
