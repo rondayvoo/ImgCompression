@@ -2,12 +2,13 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 
-#define BASERANK 2
-#define IMGRANK 150
-
 using namespace cv;
 using namespace std;
 
+constexpr auto BASERANK = 2;
+constexpr auto IMGRANK = 16;
+
+//Function to find isolated SVD rank matrix.
 Mat SVDrank(Mat inp, int rank)
 {
 	Mat S, U, VT;
@@ -17,6 +18,7 @@ Mat SVDrank(Mat inp, int rank)
 	return inp;
 }
 
+//Function to find the sum of the first maxRank SVD matrices.
 Mat SVDsum(Mat inp, int maxRank)
 {
 	Mat temp, S, U, VT, output;
@@ -33,6 +35,7 @@ Mat SVDsum(Mat inp, int maxRank)
 	return output;
 }
 
+//Function for printing compression efficiency and accuracy to console.
 void printStats(Mat* inp, Mat* out, int rank)
 {
 	Mat temp[3];
@@ -56,7 +59,7 @@ int main(int argv, char** argc)
 {
 	Mat base(8, 8, CV_8UC3, Scalar(255, 255, 255));
 	Mat expanded(512, 512, CV_8UC3);
-	Mat img = imread("banzai.jpg", IMREAD_COLOR);
+	Mat img = imread("ipsum.png", IMREAD_COLOR);
 	Mat baseSplit[3], expandSplit[3], imgSplit[3], calcSplit[3], imgOutput;
 	expandSplit[0] = Mat::zeros(512, 512, CV_8UC1);
 	expandSplit[1] = Mat::zeros(512, 512, CV_8UC1);
