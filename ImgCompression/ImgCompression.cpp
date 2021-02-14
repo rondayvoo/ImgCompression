@@ -7,9 +7,9 @@ using namespace std;
 
 constexpr auto LOWRENDER = 0; //For rendering less
 constexpr auto BASERANK = 2;
-constexpr auto BASEKVAL = 10; //max 14
+constexpr auto BASEKVAL = 20; //max 64
 constexpr auto IMGRANK = 50;
-constexpr auto IMGKVAL = 2; //max 14
+constexpr auto IMGKVAL = 10; //max 64
 
 //Function to find isolated SVD rank matrix.
 Mat SVDrank(Mat inp, int rank)
@@ -41,6 +41,18 @@ Mat SVDsum(Mat inp, int maxRank)
 //Function to find the sum of the first kValue diagonals of the DCT.
 Mat DCTsum(Mat inp, int kValue)
 {
+	pair <int, int> zigZag[64] = 
+	{ 
+		{0, 0}, {1, 0}, {0, 1}, {0, 2}, {1, 1}, {2, 0}, {3, 0}, {2, 1},
+		{1, 2}, {0, 3}, {0, 4}, {1, 3}, {2, 2}, {3, 1}, {4, 0}, {5, 0},
+		{4, 1}, {3, 2}, {2, 3}, {1, 4}, {0, 5}, {0, 6}, {1, 5}, {2, 4},
+		{3, 3}, {4, 2}, {5, 1}, {6, 0}, {7, 0}, {6, 1}, {5, 2}, {4, 3},
+		{3, 4}, {2, 5}, {1, 6}, {0, 7}, {1, 7}, {2, 6}, {3, 5}, {4, 4},
+		{5, 3}, {6, 2}, {7, 1}, {7, 2}, {6, 3}, {5, 4}, {4, 5}, {3, 6},
+		{2, 7}, {3, 7}, {4, 6}, {5, 5}, {6, 4}, {7, 3}, {7, 4}, {6, 5},
+		{5, 6}, {4, 7}, {5, 7}, {6, 6}, {7, 5}, {7, 6}, {6, 7}, {7, 7}
+	};
+
 	Mat output = inp;
 	Mat DCTtemp(8, 8, CV_32F);
 
@@ -58,15 +70,9 @@ Mat DCTsum(Mat inp, int kValue)
 
 			dct(DCTtemp, DCTtemp);
 
-			for (int k = 0; k < 8; k++)
+			for (int k = kValue; k < 64; k++)
 			{
-				for (int m = 0; m < 8; m++)
-				{
-					if (k + m >= kValue)
-					{
-						DCTtemp.at<float>(Point(k, m)) = 0.0;
-					}
-				}
+				DCTtemp.at<float>(Point(zigZag[k].first, zigZag[k].second)) = 0.0;
 			}
 
 			idct(DCTtemp, DCTtemp);
@@ -108,18 +114,8 @@ void printStatsSVD(Mat* inp, Mat* out, int rank)
 void printStatsDCT(Mat* inp, Mat* out, int kval)
 {
 	Mat temp[3];
-	float efficiency = 0.0;
+	float efficiency = (float) (kval + 1) / 64 * 100;
 	float accuracy = 0.0;
-
-	if (kval < 9)
-	{
-		efficiency = (float)((kval + 1) * (kval + 2)) / 128 * 100;
-	}
-
-	else
-	{
-		efficiency = (float)(64 - ((14 - kval) * (14 - kval + 1) / 2)) / 64 * 100;
-	}
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -139,7 +135,7 @@ int main(int argv, char** argc)
 	Mat base(8, 8, CV_8UC3, Scalar(255, 255, 255));
 	Mat expandedSVD(512, 512, CV_8UC3);
 	Mat expandedDCT(512, 512, CV_8UC3);
-	Mat img = imread("credit.png", IMREAD_COLOR);
+	Mat img = imread("anzu.png", IMREAD_COLOR);
 	Mat baseSplit[3], baseSVD[3], baseDCT[3], expandSplitSVD[3], expandSplitDCT[3], imgSplit[3], imgSVD[3], imgDCT[3];
 	Mat imgSVDout, imgDCTout;
 
