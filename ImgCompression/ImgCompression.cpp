@@ -6,10 +6,10 @@ using namespace cv;
 using namespace std;
 
 constexpr auto LOWRENDER = 0; //For rendering less
-constexpr auto BASERANK = 2;
-constexpr auto BASEKVAL = 20; //max 64
-constexpr auto IMGRANK = 50;
-constexpr auto IMGKVAL = 10; //max 64
+constexpr auto BASERANK = 3;
+constexpr auto BASEKVAL = 55; //max 63
+constexpr auto IMGRANK = 200;
+constexpr auto IMGKVAL = 3; //max 63
 
 //Function to find isolated SVD rank matrix.
 Mat SVDrank(Mat inp, int rank)
@@ -135,7 +135,7 @@ int main(int argv, char** argc)
 	Mat base(8, 8, CV_8UC3, Scalar(255, 255, 255));
 	Mat expandedSVD(512, 512, CV_8UC3);
 	Mat expandedDCT(512, 512, CV_8UC3);
-	Mat img = imread("anzu.png", IMREAD_COLOR);
+	Mat img = imread("NUS.jpeg", IMREAD_COLOR);
 	Mat baseSplit[3], baseSVD[3], baseDCT[3], expandSplitSVD[3], expandSplitDCT[3], imgSplit[3], imgSVD[3], imgDCT[3];
 	Mat imgSVDout, imgDCTout;
 
@@ -225,10 +225,16 @@ int main(int argv, char** argc)
 		//Displays image
 		imshow("img_SVD", imgSVDout);
 		imshow("img_DCT", imgDCTout);
+
+		imwrite("img_SVD.jpeg", imgSVDout);
+		imwrite("img_DCT.jpeg", imgDCTout);
 	}
 
 	imshow("base_SVD", expandedSVD);
 	imshow("base_DCT", expandedDCT);
+
+	imwrite("8by8_SVD.jpeg", expandedSVD);
+	imwrite("8by8_DCT.jpeg", expandedDCT);
 
 	waitKey(0);
 }
